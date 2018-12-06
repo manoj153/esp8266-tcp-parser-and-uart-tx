@@ -1,6 +1,12 @@
 #include "ESP8266WiFi.h"
+#include <OneWire.h> 
+#include <DallasTemperature.h>
+#define ONE_WIRE_BUS 5 
 
-
+OneWire oneWire(ONE_WIRE_BUS); 
+DallasTemperature sensors(&oneWire);
+ 
+ String temp;
  const char* ssid = "UnifiAP";
  const char* password =  "programmer123";
 uint8_t payload[3];
@@ -9,7 +15,9 @@ WiFiServer wifiServer(80);
 
 void setup() {
     // put your setup code here, to run once:
+    sensors.begin();
     pinMode(D5,OUTPUT);
+    digitalWrite(D5, LOW);
     Serial.begin(9600);
     delay(500);
 
@@ -30,50 +38,51 @@ void setup() {
 void loop() 
 {
 
+sensors.requestTemperatures();
 
+temp = sensors.getTempCByIndex(0);
   WiFiClient client = wifiServer.available();
  
   if (client) 
   {
     
+    
  
     while (client.connected()) {
- 
+
+      digitalWrite(D5, HIGH);
+
+      if (client.available()==1)
+      {
+        client.print(temp);
+        //Serial.println("dd");
+        client.stop();
+      }
+
+      else
+      {
       while (client.available()>=2) {
 
 
-      //  for(int x=0; x<2; x++)
-      //    {
-      //      payload[x] = client.read(); //2bytes of DATA
-      //      if (x==1)
-      //      {
-      //      Serial.print("Datas is 1: " );
-      //      Serial.print(payload[1], HEX);
-      //      }
-      //      else if(x==0)
-      //      {
-      //        Serial.print("Datas is 0: ");
-      //        Serial.print(payload[0], HEX);
-             
-      //      }
-      //    } 
       client.read(payload,2);
-      digitalWrite(D5, HIGH);
+      client.stop();
+      //digitalWrite(D5, LOW);
       Serial.write(payload[0]);
       Serial.write(payload[1]);
 
       }
+      
+      }
  
       delay(10);
-      digitalWrite(D5, LOW);
+      
     }
  
-    client.stop();
+    //client.stop();
     //Serial.println("Client disconnected");
 
   }
-  else
-  {
-    digitalWrite(D5, LOW);
-  }
+
+  digitalWrite(D5, LOW);
+  
 }
